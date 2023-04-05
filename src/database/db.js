@@ -1,15 +1,13 @@
 const mongoose = require("mongoose")
 
-mongoose.connect("mongodb+srv://admin:12345@bandodb.1xpqvar.mongodb.net/api-pet?retryWrites=true&w=majority",
- {},
- (error)=>{
-    if(error){
-        console.lop("Erro na conexão com o banco de dados")
-        console.log(error)
-        return
-    }
+async function main() {
+    await mongoose.connect("mongodb+srv://admin:12345@bandodb.1xpqvar.mongodb.net/api-mongo?retryWrites=true&w=majority")
+    console.log("Conectado ao banco de dados")
+}
 
-    console.log("Conexão com banco de dados foi um sucesso")
- })
+main().catch((err)=>{
+    console.lop("Erro na conexão com o banco de dados")
+    console.log(error)
+})
 
- module.exports = mongoose
+module.exports = mongoose
