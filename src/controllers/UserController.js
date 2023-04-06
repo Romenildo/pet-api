@@ -40,8 +40,32 @@ module.exports = class UserController {
             await createUserToken(newUser, req, res)
         } catch (error) {
             return res.status(500).json({ message: error})
+        } 
+    }
+
+
+    static async login (req, res) {
+
+        const { email, password } = req.body
+
+        if(!email || !password){
+            return res.status(422).json({ message: "Todos os campos obrigatórios devem ser preeenchidos!"}) 
         }
 
-       
+        //check if user exists
+        const user = await User.findOne({email: email})
+        if(!user){
+            return res.status(422).json({ message: "Email não cadastrado!"})
+        }
+
+        //check se password match                (senha recebida com senha do usuario cadastrado no abnco)
+        const checkPassword = await bcrypt.compare(password, user.password)
+
+        if(!checkPassword){
+            return res.status(422).json({ message: "Senha inválida!!"})
+        }
+
+        await createUserToken(user, req, res)
+
     }
 }
