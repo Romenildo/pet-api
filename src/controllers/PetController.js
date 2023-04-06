@@ -101,6 +101,7 @@ module.exports = class PetController {
 
         const id = req.params.id
 
+        //check if id is valid
         if(!ObjectId.isValid(id)){
             return res.status(422).json({ message: "Id invalido!"})
         }
@@ -114,6 +115,36 @@ module.exports = class PetController {
         res.status(200).json({
             pet: pet
         })
+    }
+
+    static async removePetById(req, res){
+
+        const id = req.params.id
+
+        //check if id is valid
+        if(!ObjectId.isValid(id)){
+            return res.status(422).json({ message: "Id invalido!"})
+        }
+
+        //check if pet exists
+        const pet = await Pet.findOne({_id: id})
+        if(!pet){
+            return res.status(404).json({ message: "Pet não encontrado!"})
+        }
+
+        //check if logged in user registered the pet
+        //get user
+        const token = getToken(req)
+        const user = await getUserByToken(token)
+
+        if(pet.user._id.toString() !== user._id.toString()){
+            return res.status(422).json({ message: "Pet nao é do usuario logado!"})
+
+        }
+        //delete pet
+        await Pet.findByIdAndDelete(id)
+        
+        res.status(200)
     }
 
 
