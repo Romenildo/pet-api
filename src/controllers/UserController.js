@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken")
 
 const getToken = require("../helpers/get-token")
 const createUserToken = require("../helpers/create-user-token")
+const getUserByToken = require("../helpers/get-user-by-token")
 
 module.exports = class UserController {
 
@@ -106,15 +107,47 @@ module.exports = class UserController {
     }
 
     static async editUser(req, res) {
-        const id = req.params.id
+        const { name, email, phone, password, confirmPassword} = req.body
+        let image = ''
 
-        try{
-            const user = await User.findById(id).select("-password")
-            res.status(200).json({user});
+        //check if user exist
+        const token = getToken(req)
+        const user = await getUserByToken(token)
+       
+         //validations
+        if(!name || !email|| !phone){
+            return res.status(422).json({ message: "Todos os campos obrigatórios devem ser preeenchidos!"})
+        }
+        if(password !== confirmPassword){
+            return res.status(422).json({ message: "Senhas não coincidem!"})
 
-        }catch (error){
-            return res.status(422).json({message: 'Usuário não encontrado!'})
+        }else if( password !== confirmPassword && password != null){
+            //caso ele nao queria atualizar a senha
+            const hash = await bcrypt.hash(password, 10)
+            user.password = hash
+        }
 
+        //check if email exists
+        const userExists = await User.findOne({email: email})
+        if(user.email !== email && userExists){
+            return res.status(422).json({ message: "Email já Existe!"})
+        }
+        
+        user.email = email
+        user.name = name
+        user.phone = phone
+
+        try {
+            
+            const updatedUser = await User.findOneAndUpdate(
+                { _id:user._id },
+                { $set: user },
+                { new: true }
+            )
+
+            return res.status(200).json({message: "Usuario atualizado", user: updatedUser})
+        } catch (err) {
+            return res.status(500).json({message: err})
         }
     }
 }

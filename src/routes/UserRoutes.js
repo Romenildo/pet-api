@@ -11,7 +11,7 @@ router.get('/checkuser', UserController.checkUser)
 router.get('/:id', UserController.getUserById)
 
 //rotaa protegida
-router.patch('/edit/:id', verifyToken, UserController.editUser)
+router.patch('/edit', verifyToken, UserController.editUser)
 
 
 module.exports = router
