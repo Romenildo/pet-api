@@ -143,9 +143,54 @@ module.exports = class PetController {
         }
         //delete pet
         await Pet.findByIdAndDelete(id)
-        
+
         res.status(200)
     }
 
+
+    static async updatePet(req, res){
+
+        const id = req.params.id
+        const {name, age, weight, color} = req.body
+        const images = req.files
+        const updatedData = {}
+
+        //check if pet exists
+        const pet = await Pet.findOne({_id: id})
+        if(!pet){
+            return res.status(404).json({ message: "Pet não encontrado!"})
+        }
+
+        //check if logged in user registered the pet
+        //get user
+        const token = getToken(req)
+        const user = await getUserByToken(token)
+
+        if(pet.user._id.toString() !== user._id.toString()){
+            return res.status(422).json({ message: "Pet nao é do usuario logado!"})
+        }
+
+        //validations
+        if(!name || !age || !weight || !color || images.length === 0){
+            return res.status(422).json({ message: "Todos os campos obrigátorios devem ser preenchidos"})
+        }
+        updatedData.name = name
+        updatedData.age = age
+        updatedData.weight = weight
+        updatedData.color = color
+
+        if(images.length === 0){
+            return res.status(422).json({ message: "Todos os campos obrigátorios devem ser preenchidos"})
+        }else{
+            updatedData.images = []
+            images.map((img)=>{
+                updatedData.images.push(img.filename)
+            })
+        }
+
+        await Pet.findByIdAndUpdate(id, updatedData)
+
+        res.status(200).json({ message: "pet atualizado com sucesso"})
+    }
 
 }
