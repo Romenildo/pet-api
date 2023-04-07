@@ -162,12 +162,11 @@ module.exports = class PetController {
         }
 
         //check if logged in user registered the pet
-        //get user
         const token = getToken(req)
         const user = await getUserByToken(token)
 
         if(pet.user._id.toString() !== user._id.toString()){
-            return res.status(422).json({ message: "Pet nao é do usuario logado!"})
+            return res.status(422).json({ message: "Pet é do usuario logado!"})
         }
 
         //validations
@@ -193,7 +192,7 @@ module.exports = class PetController {
         res.status(200).json({ message: "pet atualizado com sucesso"})
     }
 
-    static async updatePet(req, res){
+    static async schedule(req, res){
         const id = req.params.id
 
         //check if pet exists
@@ -201,6 +200,34 @@ module.exports = class PetController {
         if(!pet){
             return res.status(404).json({ message: "Pet não encontrado!"})
         }
+
+         //check if logged in user registered the pet
+        const token = getToken(req)
+        const user = await getUserByToken(token)
+
+        if(pet.user._id.toString() !== user._id.toString()){
+            return res.status(422).json({ message: "Pet é do usuario logado!"})
+        }
+
+
+        pet.available = false
+ 
+        await Pet.findByIdAndUpdate(id, pet)
+
+        res.status(200)
+            .json({ message: "Parabens! Adoção concluida com sucesso!"})
+    }
+
+    static async concludeAdoption(req, res){
+        const id = req.params.id
+
+        //check if pet exists
+        const pet = await Pet.findOne({_id: id})
+        if(!pet){
+            return res.status(404).json({ message: "Pet não encontrado!"})
+        }
+
+        pet.available
 
         //check if logged in user registered the pet
         const token = getToken(req)
