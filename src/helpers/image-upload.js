@@ -13,7 +13,7 @@ const imageStorage = multer.diskStorage({
             folder = "pets"
         }
 
-        callback(null, `public/images/${fodler}`)
+        callback(null, `src/public/imgs/${folder}`)
     },
     filename: function(req, file, callback){
         callback(null, Date.now() + String(Math.floor(Math.random()*1000)) + path.extname(file.originalname))
