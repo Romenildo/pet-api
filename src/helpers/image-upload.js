@@ -1,3 +1,5 @@
+/*Função para receber as imagens do front e salvar em um arquivo no back*/
+
 const multer = require("multer")
 const path = require("path")
 

@@ -5,10 +5,14 @@ const getUserByToken = require("../helpers/get-user-by-token");
 const ObjectId = require("mongoose").Types.ObjectId;
 
 module.exports = class PetController {
-  //create
+
+  /*Cria um novo pet do usuario */
   static async create(req, res) {
+
+    //recebe as infomraçõs do body
     const { name, age, weight, color } = req.body;
     const available = true;
+    //os arquivos de imagens vemd e outro local na requisicao dos .files que é diferente do body
     const images = req.files;
 
     //validations
@@ -20,11 +24,11 @@ module.exports = class PetController {
         });
     }
 
-    //get pet owner
+    //pega o dono do pet que enviou a requisicao, como vem seu id no token é possivel pegar ele
     const token = getToken(req);
     const user = await getUserByToken(token);
 
-    //create a pet
+    //Então cria o novo pet com as suas informações e o usuario que o cadastrou
     const pet = new Pet({
       name,
       age,
@@ -40,13 +44,15 @@ module.exports = class PetController {
       },
     });
 
+    //como pode ser varias imagens é preciso percorrer e adicionalar ao novo pet
     images.map((img) => {
       pet.images.push(img.filename);
     });
 
     try {
+      //e finalmente salvando o pet e retornando para o front
       const newPet = await pet.save();
-      res.status(201).json({
+      return res.status(201).json({
         message: "Pet cadastrado com sucesso!",
         newPet,
       });
@@ -55,29 +61,36 @@ module.exports = class PetController {
     }
   }
 
+  /*Retorna todos os pets cadastrados no sistema ordenados pelos urdimos adicionados */
   static async getAll(req, res) {
     const pets = await Pet.find().sort("-createdAt");
-    res.status(200).json({
+    return res.status(200).json({
       pets: pets,
     });
   }
 
+  /* pega todos os pets do usuario que mandou pedir atraves do seu token na requisicao*/
   static async getAllUserPets(req, res) {
-    //get user
+
+    //pega o usuario a partir do token dele
     const token = getToken(req);
     const user = await getUserByToken(token);
 
+    //então faz uma busca nos pets que possui o userId igual o do usuario q solicitou
     const pets = await Pet.find({ "user._id": user._id }).sort("-createdAt");
-    res.status(200).json({
+    return res.status(200).json({
       pets: pets,
     });
   }
 
+  /*Pega todos os pets que o usuario adotou */
   static async getAllUserAdoptions(req, res) {
-    //get user
+
+    //pega o usuario que solicitou a requisicao
     const token = getToken(req);
     const user = await getUserByToken(token);
 
+    //então faz uma busca nos pets que possui o adopterID igual o do usuario q solicitou
     const pets = await Pet.find({ "adopter._id": user._id }).sort("-createdAt");
 
     return res.status(200).json({
@@ -85,71 +98,78 @@ module.exports = class PetController {
     });
   }
 
+  /*Retorna o pet pelo id dele na nos parametros da requisicao pets/:id */
   static async getPetById(req, res) {
     const id = req.params.id;
 
-    //check if id is valid
+    //verifica se o id é valido
     if (!ObjectId.isValid(id)) {
       return res.status(422).json({ message: "Id invalido!" });
     }
 
-    //check if pet exists
+    //verifica se o pet existe
     const pet = await Pet.findOne({ _id: id });
     if (!pet) {
       return res.status(404).json({ message: "Pet não encontrado!" });
     }
 
-    res.status(200).json({
+    //então retorna o pet caso ele exista
+    return res.status(200).json({
       pet: pet,
     });
   }
 
+  /*deleta o pet selecionado pelo id passado no parametro da url /pets/:id */
   static async removePetById(req, res) {
     const id = req.params.id;
 
-    //check if id is valid
+    //verifica se o id é valido
     if (!ObjectId.isValid(id)) {
       return res.status(422).json({ message: "Id invalido!" });
     }
 
-    //check if pet exists
+    //verifica se o pet com aquelke id existe
     const pet = await Pet.findOne({ _id: id });
     if (!pet) {
       return res.status(404).json({ message: "Pet não encontrado!" });
     }
 
-    //check if logged in user registered the pet
-    //get user
+    //verifica se quem passou a requisicao querendo excluir o pet é dele mesmo
     const token = getToken(req);
     const user = await getUserByToken(token);
 
+    //verifica se o dono do pet é o mesmo que solicitou sua exclusao
     if (pet.user._id.toString() !== user._id.toString()) {
       return res.status(422).json({ message: "Pet nao é do usuario logado!" });
     }
-    //delete pet
+
+    //deleta o pet
     await Pet.findByIdAndDelete(id);
 
     return res.status(200).json({ message: "Pet deletado com sucesso" });
   }
 
+  /*Atualizar as informaçoes do pet do usuario */
   static async updatePet(req, res) {
+
+    //pega todas as informacoes passadas na url e no body e files
     const id = req.params.id;
     const { name, age, weight, color } = req.body;
     const images = req.files;
     const updatedData = {};
 
-    //check if pet exists
+    //verifica se o pet que quer editar existe
     const pet = await Pet.findOne({ _id: id });
     if (!pet) {
       return res.status(404).json({ message: "Pet não encontrado!" });
     }
 
-    //check if logged in user registered the pet
+    //verifica se o dono do pet é o mesmo que solicitou a edicao dele
     const token = getToken(req);
     const user = await getUserByToken(token);
 
     if (pet.user._id.toString() !== user._id.toString()) {
-      return res.status(422).json({ message: "Pet é do usuario logado!" });
+      return res.status(422).json({ message: "Pet não é do usuario logado!" });
     }
 
     //validations
@@ -174,53 +194,54 @@ module.exports = class PetController {
 
     await Pet.findByIdAndUpdate(id, updatedData);
 
-    res.status(200).json({ message: "pet atualizado com sucesso" });
+    return res.status(200).json({ message: "pet atualizado com sucesso" });
   }
 
+  /*Marcar agendamento do pet */
   static async schedule(req, res) {
     const id = req.params.id;
 
-    //check if pet exists
+    //se o pet do id passado existe
     const pet = await Pet.findOne({ _id: id });
     if (!pet) {
       return res.status(404).json({ message: "Pet não encontrado!" });
     }
 
-    //check if logged in user registered the pet
+    //verifica se o dono do pet é o mesmo que solicitou o agendamento
     const token = getToken(req);
     const user = await getUserByToken(token);
 
     if (pet.user._id.equals(user._id)) {
-      returnres.status(422).json({
+      return res.status(422).json({
         message: "Você não pode agendar uma visita com seu próprio Pet!",
       });
     }
-    // check if user has already adopted this pet
+
+    // verifica se o pet ja foi adotado ou não(se ele esta disponivel para editar)
     if (pet.adopter) {
+      //verifica se o dono do pet já agendou para esse pet
       if (pet.adopter._id.equals(user._id)) {
-        res.status(422).json({
+        return res.status(422).json({
           message: "Você já agendou uma visita para este Pet!",
         });
-        return;
       }
     }
 
-    // add user to pet
+    // adiciona o usuario como o adotador
     pet.adopter = {
       _id: user._id,
       name: user.name,
       image: user.image,
-    };
-
-    pet.available = false;
+    }
 
     await Pet.findByIdAndUpdate(id, pet);
 
-    return res
-      .status(200)
-      .json({ message: "Parabens! Adoção concluida com sucesso!" });
+    return res.status(200).json({
+      message: `A visita foi agendada com sucesso, entre em contato com ${pet.user.name} no telefone: ${pet.user.phone}`,
+    })
   }
 
+  /*Conclui a adocao do pet */
   static async concludeAdoption(req, res) {
     const id = req.params.id;
 
@@ -230,43 +251,13 @@ module.exports = class PetController {
       return res.status(404).json({ message: "Pet não encontrado!" });
     }
 
-    pet.available;
-
-    //check if logged in user registered the pet
-    const token = getToken(req);
-    const user = await getUserByToken(token);
-
-    //o id do pet que ele selecionou é igual ao dele
-    if (pet.user._id.equals(user._id)) {
-      return res
-        .status(422)
-        .json({
-          message: "Você não pode agendar uma visita com o seu próprio Pet!",
-        });
-    }
-
-    //check if user has already scheduled a visit
-    if (pet.adopter) {
-      if (pet.adopter._id.equals(user._id)) {
-        return res
-          .status(422)
-          .json({ message: "Você já agendou uma visita para este Pet!!" });
-      }
-    }
-
-    //add user to pet
-    pet.adopter = {
-      _id: user._id,
-      name: user.name,
-      image: user.image,
-    };
+    pet.available = false
 
     await Pet.findByIdAndUpdate(id, pet);
 
-    res
-      .status(200)
-      .json({
-        message: `A visita foi agendada com sucesso, entre em contato com ${pet.user.name} pelo telefone ${pet.user.phone}`,
-      });
+    return res.status(200).json({
+      pet: pet,
+      message: `Parabéns! O ciclo de adoção foi finalizado com sucesso!`,
+    })
   }
 };

@@ -1,3 +1,7 @@
+
+/*Arquivo de conexão com o banco de dados, possui as configuracoes de usuario e senha
+    Cada banco de dadso possui sua maneira diferente de configuração está é a do mongoDb utilizando o mongoose
+*/
 const mongoose = require("mongoose")
 
 async function main() {
@@ -5,7 +9,7 @@ async function main() {
     console.log("Conectado ao banco de dados")
 }
 
-main().catch((err)=>{
+main().catch((error)=>{
     console.lop("Erro na conexão com o banco de dados")
     console.log(error)
 })
