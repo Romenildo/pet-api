@@ -3,12 +3,12 @@ const jwt = require("jsonwebtoken")
 const getToken = require("./get-token")
 
 //middleware
-const checkToken = (req, res, next)=> {
+const verifyToken = (req, res, next)=> {
 
     if(!req.headers.authorization){
         return res.status(401).json({ message: "Acesso Negado!"})
     }
-
+    
     const token = getToken(req)
 
     if(!token){
@@ -26,4 +26,4 @@ const checkToken = (req, res, next)=> {
     
 }
 
-module.exports = checkToken
+module.exports = verifyToken
